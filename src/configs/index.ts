@@ -1,2 +1,3 @@
 export {PORT} from './server'
-export {COOKIE_SECRET} from './cookie'
+export {SESSION_OPTION} from './session'
+export {REDIS_OPTIONS} from './redis'
