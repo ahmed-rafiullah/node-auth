@@ -10,7 +10,7 @@ import redis  from 'redis'
 
 import session from 'express-session'
 import connectRedis from 'connect-redis'
-import { Photo } from './entities/Photo';
+import { Photo } from './entities/User';
 
 
  
