@@ -1,35 +1,35 @@
-import {Entity,Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn} from 'typeorm'
-
-interface IPhoto {
-    id?: number,
-    name: string,
-    description: string
-    filename: string,
-    views: number
-    isPublished: boolean
+import {Entity,Column, PrimaryGeneratedColumn,BeforeInsert, CreateDateColumn, UpdateDateColumn} from 'typeorm'
+import bcrypt from 'bcrypt'
+import {bcryptOptions} from '../configs'
+interface IUser{
+    id?: string,
+    firstName: string,
+    lastName: string,
+    email: string
+    password:string
+    createdAt: Date
+    updatedAt: Date
 
 }
 
-@Entity()
-export class Photo implements IPhoto {
+@Entity("users")
+export class User implements IUser {
 
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn("uuid")
+    id: string;
     
     @Column({length: 100})
-    name: string;
+    firstName: string;
 
-    @Column("text")
-    description: string;
+    @Column({length: 100})
+    lastName: string;
 
-    @Column()
-    filename: string;
+    @Column({unique: true})
+    email: string;
 
-    @Column("double")
-    views: number;
+    @Column({length: 100, select: false})
+    password: string;
 
-    @Column()
-    isPublished: boolean;
 
     @CreateDateColumn()
     createdAt: Date
@@ -37,6 +37,19 @@ export class Photo implements IPhoto {
     @UpdateDateColumn()
     updatedAt: Date
     
+
+    @BeforeInsert()
+    encryptPassword = async () => {
+        const hashedPassword = await bcrypt.hash(this.password, bcryptOptions.SALT_ROUNDS)
+        this.password = hashedPassword
+        
+    }
+
+
+    async matchesPassword(password: string){
+        return await bcrypt.compare(password, this.password)
+
+    }
 
 
 

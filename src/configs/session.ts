@@ -4,7 +4,7 @@ import { resolve } from "path";
 const HALF_HOUR = 1000 * 60 * 30;
 const IS_PROD = process.env.NODE_ENV === 'production'
 
-const {
+export const {
   COOKIE_SECRET = "development",
   SESSION_NAME = "sid",
   SESSION_MAX_AGE = HALF_HOUR,
