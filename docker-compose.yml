@@ -1,0 +1,30 @@
+version: '3.3'
+
+
+services: 
+  db:
+    container_name: mysql-db
+    image: mysql
+    ports:
+      - 4050:3306
+    environment: 
+      MYSQL_ROOT_PASSWORD: omnitron4105_
+      MYSQL_DATABASE: simple
+      MYSQL_USER: root
+      MYSQL_PASSWORD: omnitron4105_
+    volumes: 
+      - data:/var/lib/mysql
+
+  cache:
+    container_name: redis-cache
+    ports: 
+      - 6379:6379
+    image: redis:alpine
+    command: ['--requirepass secret'] 
+
+
+volumes: 
+  data:
+
+
+
