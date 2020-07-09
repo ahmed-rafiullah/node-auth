@@ -11,10 +11,3 @@ export function onUnhandledException (err: Error) {
 }
 
 
-async function  validate(schema: yup.ObjectSchema, data: any  ) {
-    try {
-       await schema.validate(data)
-    } catch(err) {
-        throw new BadRequest(err.message)
-    }
-}

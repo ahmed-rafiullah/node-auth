@@ -4,8 +4,9 @@ import "reflect-metadata";
 import { createConnection, getManager } from "typeorm";
 import express, { Request, Response, NextFunction } from "express";
 import { userRouter } from "./routers";
+import helmet from 'helmet'
 
-import { SESSION_OPTION, PORT, REDIS_OPTIONS } from "./configs";
+import { SESSION_OPTION, REDIS_OPTIONS, APP_PORT } from "./configs";
 
 import redis from "redis";
 
@@ -13,7 +14,7 @@ import session from "express-session";
 import connectRedis from "connect-redis";
 import { User } from "./entities/User";
 import { onUnhandledException, onUnhandledRejection } from "./utils";
-import { notFoundErrorHandler,internalServerErrorOrAppErrorHandler } from "./middlewares";
+import { notFoundErrorHandler,internalServerErrorOrAppErrorHandler, logOutIfTooLong } from "./middlewares";
 
 let RedisStore = connectRedis(session);
 
@@ -25,6 +26,7 @@ redisClient.on("error", (err) => {
 
 const app = express();
 
+app.use(helmet())
 // setup sessions using redis
 app.use(
   session({
@@ -36,6 +38,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+app.use(logOutIfTooLong)
+
 app.use("/user", userRouter);
 
 // 404 not found
@@ -45,13 +50,14 @@ app.use(notFoundErrorHandler);
 app.use(internalServerErrorOrAppErrorHandler);
 
 // picks up ormconfig.js automaticallyy
+
 createConnection()
   .then((connection) => {
     // here you can start to work with your entities
-
+    
     console.log("Connected to database");
-    app.listen(PORT, () => {
-      console.log(`Server is running on PORT: ${PORT}`);
+    app.listen(APP_PORT, () => {
+      console.log(`Server is running on PORT: ${APP_PORT}`);
     });
   })
   .catch((error) => console.log(error));

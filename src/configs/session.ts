@@ -1,14 +1,23 @@
 import { SessionOptions } from "express-session";
-import { resolve } from "path";
 
-const HALF_HOUR = 1000 * 60 * 30;
+
+
+
+const THIRTY_MINUTES = 1000 * 60 * 30;
+const ONE_HOUR = THIRTY_MINUTES * 2
+const SIX_HOURS = ONE_HOUR * 6;
 const IS_PROD = process.env.NODE_ENV === 'production'
 
+
+
 export const {
+  
   COOKIE_SECRET = "development",
   SESSION_NAME = "sid",
-  SESSION_MAX_AGE = HALF_HOUR,
+  SESSION_MAX_AGE = THIRTY_MINUTES,
 } = process.env;
+
+export const ABSOLUTE_TIME_OUT: number = +(process.env.ABSOLUTE_TIME_OUT ??  SIX_HOURS)
 
 export const SESSION_OPTION: SessionOptions = {
   secret: COOKIE_SECRET,
@@ -16,7 +25,7 @@ export const SESSION_OPTION: SessionOptions = {
   cookie: {
     maxAge: +SESSION_MAX_AGE,
     secure: IS_PROD,
-    sameSite: true,
+    sameSite: false,
 
   },
   saveUninitialized: false,
@@ -24,3 +33,6 @@ export const SESSION_OPTION: SessionOptions = {
   resave: false
   
 };
+
+
+

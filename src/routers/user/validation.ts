@@ -50,3 +50,18 @@ export const loginSchema = yup.object().shape({
      })
    
   });
+
+
+  export const emailVerificationSchema = yup.object().shape({
+    token: yup.string().required()
+  });
+
+  export const jwtEmailVerificationSchema = yup.object().shape({
+    id: yup.string().required()
+  });
+
+
+  export const resendEmailSchema = yup.object().shape({
+    email: email
+  });
+
