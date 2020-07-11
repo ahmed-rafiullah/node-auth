@@ -21,7 +21,7 @@ module.exports =
     password: DATABASE_PASSWORD,
     database: DATABASE_NAME,
     synchronize: true,
-    logging: false,
+    logging: true,
     migrationsTableName: 'migrations',
     entities: [
         "src/entities/**/*.ts"

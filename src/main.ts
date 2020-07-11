@@ -13,7 +13,7 @@ import redis from "redis";
 import session from "express-session";
 import connectRedis from "connect-redis";
 import { User } from "./entities/User";
-import { onUnhandledException, onUnhandledRejection } from "./utils";
+import { onUnhandledException, onUnhandledRejection, removeExpiredPasswordResetTokens } from "./utils";
 import { notFoundErrorHandler,internalServerErrorOrAppErrorHandler, logOutIfTooLong } from "./middlewares";
 
 let RedisStore = connectRedis(session);
@@ -59,6 +59,9 @@ createConnection()
     app.listen(APP_PORT, () => {
       console.log(`Server is running on PORT: ${APP_PORT}`);
     });
+
+    // start cron job now
+    // removeExpiredPasswordResetTokens.start()
   })
   .catch((error) => console.log(error));
 

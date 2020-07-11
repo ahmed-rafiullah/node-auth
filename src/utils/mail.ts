@@ -30,3 +30,22 @@ export function sendMail(options: SendMailOptions) {
      
      `
  }
+
+
+
+ export function passWordResetMailTemplate (link: string) {
+    return `
+    <p>Please click the button below to reset your password.</p>
+   
+    <a href="${link}">Reset Password</a>
+
+    or the link below
+
+    <br/>     <br/>
+
+    <a href="${link}">${link}</a>
+    
+    <p>If you did not initiate this request no further action is required.</p>
+    
+    `
+}

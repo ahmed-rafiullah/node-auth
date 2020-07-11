@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { BadRequest, UnAuthorizedRequest } from "../errors/badRequest";
 import { SESSION_NAME, ABSOLUTE_TIME_OUT, SESSION_MAX_AGE } from "../configs";
 import { nextTick } from "process";
+import {getRepository} from 'typeorm'
 
 export function isAlreadyLoggedIn(
   req: Request,
@@ -73,3 +74,9 @@ export function logOut(req: Request, res: Response) {
     });
   });
 }
+
+// TODO: extract out the user activatedAt action to its own function
+// export async function markAsVerified(){
+//   // update activated at
+//   await getRepository(User).update(validID!.id, {activatedAt: new Date()})
+// }

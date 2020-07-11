@@ -21,6 +21,7 @@
   "dependencies": {
     "@types/bcrypt": "^3.0.0",
     "@types/connect-redis": "0.0.14",
+    "@types/cron": "^1.7.2",
     "@types/express": "^4.17.6",
     "@types/express-session": "^1.17.0",
     "@types/helmet": "0.0.47",
@@ -30,7 +31,9 @@
     "@types/redis": "^2.8.24",
     "@types/yup": "^0.29.3",
     "bcrypt": "^5.0.0",
+    "bull": "^3.15.0",
     "connect-redis": "^4.0.4",
+    "cron": "^1.8.2",
     "csurf": "^1.11.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",

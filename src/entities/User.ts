@@ -1,7 +1,8 @@
-import {Entity,Column, PrimaryGeneratedColumn,BeforeInsert, CreateDateColumn, UpdateDateColumn} from 'typeorm'
+import {Entity,Column, PrimaryGeneratedColumn,BeforeInsert, CreateDateColumn, UpdateDateColumn, BeforeUpdate} from 'typeorm'
 import bcrypt from 'bcrypt'
 import {bcryptOptions, APP_ORIGIN, APP_SECRET,EMAIL_VERIFICATION_EXPIRY_TIME} from '../configs'
 import jsonwebtoken from 'jsonwebtoken'
+import { AsyncResource } from 'async_hooks';
 
 
 interface IUser{
@@ -45,11 +46,15 @@ export class User implements IUser {
     
 
     @BeforeInsert()
-    encryptPassword = async () => {
+    @BeforeUpdate()
+     encryptPasswordWhenInsert =  async () => {
         const hashedPassword = await bcrypt.hash(this.password, bcryptOptions.SALT_ROUNDS)
         this.password = hashedPassword
         
     }
+
+
+
 
 
     async matchesPassword(password: string){

@@ -6,9 +6,18 @@ export function internalServerErrorOrAppErrorHandler(err: Error , req: Request, 
     console.log(err);
 
     //@ts-ignore
-    res.status(err.status ?? 500).json({
-      message: err.message ?? "Internal Server Error",
+    if(err.status){
+      //@ts-ignore
+      return  res.status(err.status).json({
+        message: err.message
+      });
+    }
+
+    //@ts-ignore
+    return  res.status(500).json({
+      message: 'Internal Server Error'
     });
+    
 }
 
 // not found handler should never have error in its function signature other wise it wont work
