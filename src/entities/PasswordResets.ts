@@ -12,7 +12,7 @@ export class PasswordResets {
     @PrimaryGeneratedColumn('uuid')
     resetID: string
     
-    @ManyToOne(type => User)
+    @ManyToOne(type => User, {onDelete: "CASCADE"})
     user: User
 
 

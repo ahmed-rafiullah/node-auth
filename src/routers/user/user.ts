@@ -351,7 +351,7 @@ route.post("/password/reset", isAlreadyLoggedIn, async (req, res, next) => {
 
      sendMail({
       to: "alize.herman@ethereal.email",
-      subject: "Password reset",
+      subject: "Password reset status",
       text: "Your password was successfully reset",
     });
 
