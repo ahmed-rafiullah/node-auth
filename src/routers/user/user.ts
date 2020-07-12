@@ -7,10 +7,11 @@ import {
   resendEmailSchema,
   passwordResetSchema,
   passwordForgotSchema,
+  passwordReAuthSchema,
 } from "./validation";
 import { getRepository, getManager, InsertResult } from "typeorm";
 import { User } from "../../entities/User";
-import { logIn, logOut, shouldBeLoggedIn } from "../../middlewares";
+import { logIn, logOut, shouldBeLoggedIn , reAuthenticate} from "../../middlewares";
 import { isAlreadyLoggedIn } from "../../middlewares";
 import jsonwebtoken from "jsonwebtoken";
 
@@ -87,6 +88,7 @@ route.post("/register", isAlreadyLoggedIn, async (req, res, next) => {
 route.post("/login", isAlreadyLoggedIn, async (req, res, next) => {
   try {
     console.log(req.body);
+
     const validLogin = await loginSchema.validate(req.body).catch((err) => {
       throw new BadRequest(err.message);
     });
@@ -363,5 +365,53 @@ route.post("/password/reset", isAlreadyLoggedIn, async (req, res, next) => {
     next(err);
   }
 });
+
+
+// should be protected by adding reauthenticateIfIdle middleware
+route.get('/settings', shouldBeLoggedIn,  reAuthenticate() ,(req, res, next) => {
+  res.json({
+    message: 'sensitive settings :O'
+  })
+})
+
+// password confirm to reset reauthenticate timer
+route.post('/password/confirm', shouldBeLoggedIn ,async (req, res, next) => {
+ try {
+  const validatedPassword = await passwordReAuthSchema.validate(req.body)
+  .catch(err => { throw new BadRequest(err.message) })
+  // get user for current session
+  const userID = req.session!.userID
+  
+
+  const user = await getRepository(User).findOne({id: userID}, {select: ['password']})
+
+  if(user){
+
+   const result = await user.matchesPassword(validatedPassword!.password)
+   
+
+   if(!result){
+     throw new BadRequest('passwords don\'t match')
+   }
+
+   // reset time
+   req.session!.lastLogin = Date.now()
+
+   return res.json({
+     message: 'password confirmed successfully'
+   })
+
+
+  } else {
+    throw new BadRequest('user no longer exists')
+  }
+
+ 
+
+ }catch(err) {
+   next(err)
+ }
+})
+
 
 export default route;

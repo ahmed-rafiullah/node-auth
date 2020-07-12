@@ -1,7 +1,7 @@
 import { SessionOptions } from "express-session";
 
 
-
+const ONE_MINUTE = 1000 * 60 * 1
 const FIVE_MINUTES =  1000 * 60 * 5
 const THIRTY_MINUTES = 1000 * 60 * 30;
 const ONE_HOUR = THIRTY_MINUTES * 2
@@ -37,6 +37,8 @@ export const SESSION_OPTION: SessionOptions = {
 export const PASSWORD_RESET_TIMEOUT = FIVE_MINUTES
 
 export const PASSWORD_RESET_BYTES = 40
+
+export const CONFIRM_PASSWORD_TIME = ONE_MINUTE
 
 
 

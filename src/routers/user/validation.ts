@@ -25,7 +25,7 @@ const barePassword = yup
 
 const password = yup
   .string()
-  
+  .nullable(false)
   .required("password is required")
   .min(8)
   .max(72)
@@ -112,6 +112,12 @@ export const loginSchema = yup.object().shape({
 
     })
   })
+
+
+  export const passwordReAuthSchema = yup.object({
+    password: passwordWithOutRegex
+  })
+
 
 
   

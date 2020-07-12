@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { BadRequest, UnAuthorizedRequest } from "../errors/badRequest";
-import { SESSION_NAME, ABSOLUTE_TIME_OUT, SESSION_MAX_AGE } from "../configs";
+import { SESSION_NAME, ABSOLUTE_TIME_OUT, SESSION_MAX_AGE, CONFIRM_PASSWORD_TIME } from "../configs";
 import { nextTick } from "process";
 import {getRepository} from 'typeorm'
 
@@ -43,7 +43,7 @@ export async function logOutIfTooLong(
       const createdAt = req.session!.createdAt;
       if (now > createdAt + SESSION_MAX_AGE) {
         await logOut(req, res);
-        console.log('loggin out')
+        console.log('logging out')
         return next(new UnAuthorizedRequest('session expired'))
       }
     } 
@@ -58,6 +58,7 @@ export async function logOutIfTooLong(
 export function logIn(req: Request, userID: string) {
   req.session!.userID = userID;
   req.session!.createdAt = Date.now();
+  req.session!.lastLogin = Date.now()
 }
 
 export const isLoggedIn = (req: Request) => !!req.session!.userID;
@@ -80,3 +81,22 @@ export function logOut(req: Request, res: Response) {
 //   // update activated at
 //   await getRepository(User).update(validID!.id, {activatedAt: new Date()})
 // }
+
+
+
+export function reAuthenticate(timeFromNow: number | null  = null) {
+  
+  return function(req: Request, res: Response, next: NextFunction){
+    if(isLoggedIn(req)) {
+      const lastLogin: number = req.session!.lastLogin
+      const now = Date.now()
+      if( now > lastLogin + (timeFromNow ?? CONFIRM_PASSWORD_TIME)){
+        return next(new UnAuthorizedRequest('You need to provide your password again'))
+      }
+    }
+  
+    next()
+  }
+ 
+
+}
