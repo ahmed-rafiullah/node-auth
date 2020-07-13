@@ -16,13 +16,6 @@ services:
       - data:/var/lib/mysql
 
   cache:
-    container_name: redis-cache
-    ports: 
-      - 6379:6379
-    image: redis:alpine
-    command: ['--requirepass secret'] 
-
-  mongo-cache:
     container_name: mongo-cache
     image: mongo
     ports: 
@@ -33,9 +26,6 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     volumes: 
     - cache:/data/db
-
-
-
 
 volumes: 
   data:

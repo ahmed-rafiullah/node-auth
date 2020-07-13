@@ -54,9 +54,6 @@ export class User implements IUser {
     }
 
 
-
-
-
     async matchesPassword(password: string){
         return await bcrypt.compare(password, this.password)
 
