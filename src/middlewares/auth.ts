@@ -59,6 +59,12 @@ export function logIn(req: Request, userID: string) {
   req.session!.userID = userID;
   req.session!.createdAt = Date.now();
   req.session!.lastLogin = Date.now()
+  //@ts-ignore
+  req.session!.sessionMeta =  req[Symbol.for('agent')]
+
+  req.session!.sessionMeta.ipAddress = req.connection.remoteAddress
+   
+  
 }
 
 export const isLoggedIn = (req: Request) => !!req.session!.userID;

@@ -22,9 +22,24 @@ services:
     image: redis:alpine
     command: ['--requirepass secret'] 
 
+  mongo-cache:
+    container_name: mongo-cache
+    image: mongo
+    ports: 
+      - 27017:27017
+    command: --wiredTigerCacheSizeGB 0.5
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes: 
+    - cache:/data/db
+
+
+
 
 volumes: 
   data:
+  cache:
 
 
 

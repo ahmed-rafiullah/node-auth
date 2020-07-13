@@ -1,4 +1,5 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import {
   registerSchema,
   loginSchema,
@@ -9,10 +10,15 @@ import {
   passwordForgotSchema,
   passwordReAuthSchema,
 } from "./validation";
-import { getRepository, getManager, InsertResult } from "typeorm";
+import { getRepository, getManager, InsertResult, ObjectID } from "typeorm";
 import { User } from "../../entities/User";
-import { logIn, logOut, shouldBeLoggedIn , reAuthenticate} from "../../middlewares";
-import { isAlreadyLoggedIn } from "../../middlewares";
+import {
+  logIn,
+  logOut,
+  shouldBeLoggedIn,
+  reAuthenticate,
+} from "../../middlewares";
+import { isAlreadyLoggedIn, parseUserAgent } from "../../middlewares";
 import jsonwebtoken from "jsonwebtoken";
 
 import { BadRequest, UnAuthorizedRequest } from "../../errors/badRequest";
@@ -23,6 +29,7 @@ import {
 } from "../../utils";
 import { APP_SECRET, PASSWORD_RESET_TIMEOUT } from "../../configs";
 import { PasswordResets } from "../../entities/PasswordResets";
+import { Sessions } from "../../entities/MongooseSession";
 
 const route = Router();
 
@@ -31,8 +38,12 @@ route.get("/home", shouldBeLoggedIn, async (req, res, next) => {
 
   const user = await getRepository(User).findOne({ id: req.session!.userID });
   console.log(user);
+  //@ts-ignore
+  console.log(req[Symbol.for("agent")]);
   res.json({
     user,
+    //@ts-ignore
+    agent: req[Symbol.for("agent")],
   });
 });
 
@@ -85,49 +96,54 @@ route.post("/register", isAlreadyLoggedIn, async (req, res, next) => {
   }
 });
 
-route.post("/login", isAlreadyLoggedIn, async (req, res, next) => {
-  try {
-    console.log(req.body);
+route.post(
+  "/login",
+  isAlreadyLoggedIn,
+  parseUserAgent(),
+  async (req, res, next) => {
+    try {
+      console.log(req.body);
 
-    const validLogin = await loginSchema.validate(req.body).catch((err) => {
-      throw new BadRequest(err.message);
-    });
+      const validLogin = await loginSchema.validate(req.body).catch((err) => {
+        throw new BadRequest(err.message);
+      });
 
-    // check if user exists or not
-    const foundUser = await getRepository(User).findOne(
-      { email: validLogin!.email },
-      { select: ["id", "password", "email", "activatedAt"] }
-    );
-    console.log(foundUser);
-
-    // no email or password not correct
-    if (
-      !foundUser ||
-      !(await foundUser.matchesPassword(validLogin!.password))
-    ) {
-      throw new UnAuthorizedRequest("email or password incorrect");
-    }
-
-    if (!foundUser.activatedAt) {
-      throw new UnAuthorizedRequest(
-        "you need to verify your email first or resend if you haven't received it"
+      // check if user exists or not
+      const foundUser = await getRepository(User).findOne(
+        { email: validLogin!.email },
+        { select: ["id", "password", "email", "activatedAt"] }
       );
+      console.log(foundUser);
+
+      // no email or password not correct
+      if (
+        !foundUser ||
+        !(await foundUser.matchesPassword(validLogin!.password))
+      ) {
+        throw new UnAuthorizedRequest("email or password incorrect");
+      }
+
+      if (!foundUser.activatedAt) {
+        throw new UnAuthorizedRequest(
+          "you need to verify your email first or resend if you haven't received it"
+        );
+      }
+
+      //user login credentials are correct
+      logIn(req, foundUser.id);
+
+      res.json({
+        message: "logged in user",
+        user: {
+          id: foundUser.id,
+          email: foundUser.email,
+        },
+      });
+    } catch (err) {
+      next(err);
     }
-
-    //user login credentials are correct
-    logIn(req, foundUser.id);
-
-    res.json({
-      message: "logged in user",
-      user: {
-        id: foundUser.id,
-        email: foundUser.email,
-      },
-    });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 route.post("/logout", shouldBeLoggedIn, async (req, res, next) => {
   try {
@@ -242,22 +258,18 @@ route.post("/password/forgot", isAlreadyLoggedIn, async (req, res, next) => {
       // set the reset token data
       passwordReset.token = token;
       passwordReset.user = found;
-      // expires 1 hour from now 
-      const date = new Date()
-      const expiresAt = new Date(date.getTime() + PASSWORD_RESET_TIMEOUT)
+      // expires 1 hour from now
+      const date = new Date();
+      const expiresAt = new Date(date.getTime() + PASSWORD_RESET_TIMEOUT);
 
-      passwordReset.expiresAt = expiresAt
+      passwordReset.expiresAt = expiresAt;
 
-   
-
-      console.log(passwordReset)
+      console.log(passwordReset);
 
       // https://github.com/AhmedKhattak/presentations/blob/master/node-auth.md#deactivation
       // took the bad ux option since its easier
 
       // perform transaction
-
-    
 
       await getManager().transaction(async (transactionEntityManager) => {
         // delete all current user reset tokens
@@ -265,24 +277,21 @@ route.post("/password/forgot", isAlreadyLoggedIn, async (req, res, next) => {
           .getRepository(PasswordResets)
           .delete({ user: found });
         // save to db this will also hash the token
-       const res =  await transactionEntityManager
+        const res = await transactionEntityManager
           .getRepository(PasswordResets)
-          // it adds the id to the in memory passwordReset object before saving it to 
+          // it adds the id to the in memory passwordReset object before saving it to
           // db so we can access it later after the transaction implicitly !
-          .save(passwordReset)
+          .save(passwordReset);
 
-          console.log(res)
-          
+        console.log(res);
       });
 
-  
-      console.log('---------')
-      console.log(passwordReset)
-    
+      console.log("---------");
+      console.log(passwordReset);
 
       // create a sharable url
-      // id will be already present here 
-      // WARNING: 
+      // id will be already present here
+      // WARNING:
       // DO NOT move this code to be above the transaction block code
       let url = passwordReset.createPasswordResetUrl(token);
 
@@ -305,7 +314,6 @@ route.post("/password/forgot", isAlreadyLoggedIn, async (req, res, next) => {
 });
 
 route.post("/password/reset", isAlreadyLoggedIn, async (req, res, next) => {
-  
   try {
     // validate query params and body
     const validPasswordReset = await passwordResetSchema.validate({
@@ -313,12 +321,11 @@ route.post("/password/reset", isAlreadyLoggedIn, async (req, res, next) => {
       query: req.query,
     });
 
-
-
     // check if user exists
     // always select id over here
     const found = await getRepository(PasswordResets).findOne({
-      where: { resetID: validPasswordReset!.query!.id }, relations: ['user']
+      where: { resetID: validPasswordReset!.query!.id },
+      relations: ["user"],
     });
 
     // if no password reset is found or token is invalid or user for token is not found in user table
@@ -334,24 +341,22 @@ route.post("/password/reset", isAlreadyLoggedIn, async (req, res, next) => {
 
     // reset password and delete all tokens for user
 
-    found.user.password = validPasswordReset!.body!.password
+    found.user.password = validPasswordReset!.body!.password;
 
     await getManager().transaction(async (transactionEntityManager) => {
       // update password
-      await transactionEntityManager
-        .getRepository(User)
-        .save(found.user);
+      await transactionEntityManager.getRepository(User).save(found.user);
 
       // delete all current user reset tokens
       await transactionEntityManager
         .getRepository(PasswordResets)
         .createQueryBuilder()
         .delete()
-        .where('user = :id', {id: found.user.id})
-        .execute()
+        .where("user = :id", { id: found.user.id })
+        .execute();
     });
 
-     sendMail({
+    sendMail({
       to: "alize.herman@ethereal.email",
       subject: "Password reset status",
       text: "Your password was successfully reset",
@@ -361,57 +366,91 @@ route.post("/password/reset", isAlreadyLoggedIn, async (req, res, next) => {
       message: "OK",
     });
   } catch (err) {
-    
     next(err);
   }
 });
 
-
 // should be protected by adding reauthenticateIfIdle middleware
-route.get('/settings', shouldBeLoggedIn,  reAuthenticate() ,(req, res, next) => {
+route.get("/settings", shouldBeLoggedIn, reAuthenticate(), (req, res, next) => {
   res.json({
-    message: 'sensitive settings :O'
-  })
-})
+    message: "sensitive settings :O",
+  });
+});
 
 // password confirm to reset reauthenticate timer
-route.post('/password/confirm', shouldBeLoggedIn ,async (req, res, next) => {
- try {
-  const validatedPassword = await passwordReAuthSchema.validate(req.body)
-  .catch(err => { throw new BadRequest(err.message) })
-  // get user for current session
-  const userID = req.session!.userID
-  
+route.post("/password/confirm", shouldBeLoggedIn, async (req, res, next) => {
+  try {
+    const validatedPassword = await passwordReAuthSchema
+      .validate(req.body)
+      .catch((err) => {
+        throw new BadRequest(err.message);
+      });
+    // get user for current session
+    const userID = req.session!.userID;
 
-  const user = await getRepository(User).findOne({id: userID}, {select: ['password']})
+    const user = await getRepository(User).findOne(
+      { id: userID },
+      { select: ["password"] }
+    );
 
-  if(user){
+    if (user) {
+      const result = await user.matchesPassword(validatedPassword!.password);
 
-   const result = await user.matchesPassword(validatedPassword!.password)
-   
+      if (!result) {
+        throw new BadRequest("passwords don't match");
+      }
 
-   if(!result){
-     throw new BadRequest('passwords don\'t match')
-   }
+      // reset time
+      req.session!.lastLogin = Date.now();
 
-   // reset time
-   req.session!.lastLogin = Date.now()
-
-   return res.json({
-     message: 'password confirmed successfully'
-   })
-
-
-  } else {
-    throw new BadRequest('user no longer exists')
+      return res.json({
+        message: "password confirmed successfully",
+      });
+    } else {
+      throw new BadRequest("user no longer exists");
+    }
+  } catch (err) {
+    next(err);
   }
+});
 
- 
+// logout all sessions other than the current
+route.post(
+  "/sessions/logout",
+  shouldBeLoggedIn,
+  reAuthenticate(),
+  async (req, res, next) => {
+    try {
+      // get user for current session
+      const userID = req.session!.userID;
+      const result = await Sessions.deleteMany({
+        "session.userID": userID,
+        _id: { $nin: [req.sessionID] },
+      });
+      res.json({
+        message: "logged out from all other sessions",
+      });
 
- }catch(err) {
-   next(err)
- }
-})
+      // go through redis session store and clear all sessions except this one
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
+// list all current sessions of logged in user
+route.get("/sessions/", shouldBeLoggedIn, async (req, res, next) => {
+  try {
+    // get user for current session
+    const userID = req.session!.userID;
+
+    const result = await Sessions.find({ "session.userID": userID });
+    res.json({
+      sessions: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default route;

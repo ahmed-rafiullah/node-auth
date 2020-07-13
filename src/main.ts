@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import "reflect-metadata";
-import { createConnection, getManager } from "typeorm";
+import { createConnection, getManager, MongoClient } from "typeorm";
 import express, { Request, Response, NextFunction } from "express";
 import { userRouter } from "./routers";
 import helmet from 'helmet'
@@ -15,23 +15,39 @@ import connectRedis from "connect-redis";
 import { User } from "./entities/User";
 import { onUnhandledException, onUnhandledRejection, removeExpiredPasswordResetTokens } from "./utils";
 import { notFoundErrorHandler,internalServerErrorOrAppErrorHandler, logOutIfTooLong } from "./middlewares";
+import { parseUserAgent } from "./middlewares/userAgent";
 
-let RedisStore = connectRedis(session);
+// let RedisStore = connectRedis(session);
 
-let redisClient = redis.createClient(REDIS_OPTIONS);
+// let redisClient = redis.createClient(REDIS_OPTIONS);
 
-redisClient.on("error", (err) => {
-  console.log(err);
-});
+ import mongoStore from  'connect-mongo'
+
+ import mongoose from 'mongoose'
+
+ const MongoStoreWithSession = mongoStore(session)
+
+// redisClient.on("error", (err) => {
+//   console.log(err);
+// });
 
 const app = express();
+
+
+
+
+
+
 
 app.use(helmet())
 // setup sessions using redis
 app.use(
   session({
     ...SESSION_OPTION,
-    store: new RedisStore({ client: redisClient }),
+    store:  new MongoStoreWithSession({
+       mongooseConnection: mongoose.connection,
+       stringify: false,
+    })
   })
 );
 
@@ -52,16 +68,15 @@ app.use(internalServerErrorOrAppErrorHandler);
 // picks up ormconfig.js automaticallyy
 
 createConnection()
-  .then((connection) => {
-    // here you can start to work with your entities
-    
+  .then(() => {
+
+    return mongoose.connect('mongodb://root:example@localhost:27017/session/?authSource=admin',{ dbName: 'session-cache' ,useNewUrlParser: true, useUnifiedTopology: true})
+  
+  }).then(() => {
     console.log("Connected to database");
     app.listen(APP_PORT, () => {
       console.log(`Server is running on PORT: ${APP_PORT}`);
     });
-
-    // start cron job now
-    // removeExpiredPasswordResetTokens.start()
   })
   .catch((error) => console.log(error));
 
@@ -71,3 +86,7 @@ process.on("uncaughtException", onUnhandledException);
 process.on("unhandledRejection", onUnhandledRejection);
 
 
+// db.getCollection('sessions').find({ $and: [{ 'session.userID' : {$eq: '8a375c22-9861-48cc-b3d4-d938007b3b8d'} }, {_id: { $nin: ['UTfJjR6nekmWuKUyoF38gnxjDsfnrrEN'] }}]});
+
+
+// db.getCollection('sessions').deleteMany({ $and: [{ 'session.userID' : {$eq: '8a375c22-9861-48cc-b3d4-d938007b3b8d'} }, {_id: { $nin: ['UTfJjR6nekmWuKUyoF38gnxjDsfnrrEN'] }}]});
