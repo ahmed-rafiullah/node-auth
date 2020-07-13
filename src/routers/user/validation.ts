@@ -74,7 +74,8 @@ export const registerSchema = yup.object().shape({
 
 export const loginSchema = yup.object().shape({
     email: email,
-    password: passwordWithOutRegex
+    password: passwordWithOutRegex,
+    rememberMe: yup.boolean().optional().default(false)
    
   });
 

@@ -6,6 +6,8 @@ const FIVE_MINUTES =  1000 * 60 * 5
 const THIRTY_MINUTES = 1000 * 60 * 30;
 const ONE_HOUR = THIRTY_MINUTES * 2
 const SIX_HOURS = ONE_HOUR * 6;
+const ONE_DAY = ONE_HOUR * 24
+const ONE_WEEK = ONE_DAY * 7
 const IS_PROD = process.env.NODE_ENV === 'production'
 
 
@@ -15,6 +17,7 @@ export const {
   COOKIE_SECRET = "development",
   SESSION_NAME = "sid",
   SESSION_MAX_AGE = THIRTY_MINUTES,
+  SESSION_REMEMBER_ME_MAX_AGE = ONE_WEEK
 } = process.env;
 
 export const ABSOLUTE_TIME_OUT: number = +(process.env.ABSOLUTE_TIME_OUT ??  SIX_HOURS)

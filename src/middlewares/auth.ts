@@ -1,8 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import { BadRequest, UnAuthorizedRequest } from "../errors/badRequest";
-import { SESSION_NAME, ABSOLUTE_TIME_OUT, SESSION_MAX_AGE, CONFIRM_PASSWORD_TIME } from "../configs";
+import {
+  SESSION_NAME,
+  ABSOLUTE_TIME_OUT,
+  SESSION_MAX_AGE,
+  CONFIRM_PASSWORD_TIME,
+  SESSION_REMEMBER_ME_MAX_AGE,
+} from "../configs";
 import { nextTick } from "process";
-import {getRepository} from 'typeorm'
+import { getRepository } from "typeorm";
 
 export function isAlreadyLoggedIn(
   req: Request,
@@ -36,35 +42,54 @@ export async function logOutIfTooLong(
   next: NextFunction
 ) {
   try {
-    console.log('hmmmmm')
+    console.log("hmmmmm");
     if (isLoggedIn(req)) {
-        console.log('hehe')
+      console.log("hehe");
       const now = Date.now();
-      const createdAt = req.session!.createdAt;
-      if (now > createdAt + SESSION_MAX_AGE) {
-        await logOut(req, res);
-        console.log('logging out')
-        return next(new UnAuthorizedRequest('session expired'))
+      const createdAt: number = req.session!.createdAt;
+    
+      
+      if (req.session!.rememberMe) {
+        if (now > createdAt + +SESSION_REMEMBER_ME_MAX_AGE) {
+          await logOut(req, res);
+          console.log("logging out");
+          return next(new UnAuthorizedRequest("session expired"));
+        }
+      } else {
+        if (now > createdAt + +SESSION_MAX_AGE) {
+          await logOut(req, res);
+          console.log("logging out");
+          return next(new UnAuthorizedRequest("session expired"));
+        }
       }
-    } 
+    }
 
-    next()
-
+    next();
   } catch (err) {
     next(err);
   }
 }
 
-export function logIn(req: Request, userID: string) {
+export function logIn(
+  req: Request,
+  userID: string,
+  rememberMe: boolean = false
+) {
   req.session!.userID = userID;
   req.session!.createdAt = Date.now();
-  req.session!.lastLogin = Date.now()
+  req.session!.lastLogin = Date.now();
   //@ts-ignore
-  req.session!.sessionMeta =  req[Symbol.for('agent')]
+  req.session!.sessionMeta = req[Symbol.for("agent")];
 
-  req.session!.sessionMeta.ipAddress = req.connection.remoteAddress
-   
-  
+  req.session!.sessionMeta.ipAddress = req.connection.remoteAddress;
+
+  if (rememberMe) {
+    req.session!.rememberMe = rememberMe;
+    
+    console.log(SESSION_REMEMBER_ME_MAX_AGE)
+    // set expiry date on cookie as well 
+    req.session!.cookie.maxAge = +SESSION_REMEMBER_ME_MAX_AGE
+  }
 }
 
 export const isLoggedIn = (req: Request) => !!req.session!.userID;
@@ -88,21 +113,34 @@ export function logOut(req: Request, res: Response) {
 //   await getRepository(User).update(validID!.id, {activatedAt: new Date()})
 // }
 
-
-
-export function reAuthenticate(timeFromNow: number | null  = null) {
-  
-  return function(req: Request, res: Response, next: NextFunction){
-    if(isLoggedIn(req)) {
-      const lastLogin: number = req.session!.lastLogin
-      const now = Date.now()
-      if( now > lastLogin + (timeFromNow ?? CONFIRM_PASSWORD_TIME)){
-        return next(new UnAuthorizedRequest('You need to provide your password again'))
+export function reAuthenticate(timeFromNow: number | null = null) {
+  return function (req: Request, res: Response, next: NextFunction) {
+    if (isLoggedIn(req)) {
+      const lastLogin: number = req.session!.lastLogin;
+      const now = Date.now();
+      if (now > lastLogin + (timeFromNow ?? CONFIRM_PASSWORD_TIME)) {
+        return next(
+          new UnAuthorizedRequest("You need to provide your password again")
+        );
       }
     }
-  
-    next()
-  }
- 
 
+    next();
+  };
+}
+
+export function rateLimitAndLockOutAccount(timeFromNow: number | null = null) {
+  return function (req: Request, res: Response, next: NextFunction) {
+    if (isLoggedIn(req)) {
+      const lastLogin: number = req.session!.lastLogin;
+      const now = Date.now();
+      if (now > lastLogin + (timeFromNow ?? CONFIRM_PASSWORD_TIME)) {
+        return next(
+          new UnAuthorizedRequest("You need to provide your password again")
+        );
+      }
+    }
+
+    next();
+  };
 }

@@ -130,7 +130,8 @@ route.post(
       }
 
       //user login credentials are correct
-      logIn(req, foundUser.id);
+      
+      logIn(req, foundUser.id, validLogin!.rememberMe);
 
       res.json({
         message: "logged in user",
@@ -260,7 +261,7 @@ route.post("/password/forgot", isAlreadyLoggedIn, async (req, res, next) => {
       passwordReset.user = found;
       // expires 1 hour from now
       const date = new Date();
-      const expiresAt = new Date(date.getTime() + PASSWORD_RESET_TIMEOUT);
+      const expiresAt = new Date(date.getSeconds() + PASSWORD_RESET_TIMEOUT);
 
       passwordReset.expiresAt = expiresAt;
 
