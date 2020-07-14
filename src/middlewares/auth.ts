@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from "express";
 import { BadRequest, UnAuthorizedRequest } from "../errors/badRequest";
 import {
   SESSION_NAME,
-  ABSOLUTE_TIME_OUT,
   SESSION_MAX_AGE,
   CONFIRM_PASSWORD_TIME,
   SESSION_REMEMBER_ME_MAX_AGE,
@@ -92,7 +91,7 @@ export function logIn(
   }
 }
 
-export const isLoggedIn = (req: Request) => !!req.session!.userID;
+export const isLoggedIn = (req: Request): boolean =>  !!req.session?.userID;
 
 export function logOut(req: Request, res: Response) {
   return new Promise((resolve, reject) => {
@@ -118,7 +117,7 @@ export function reAuthenticate(timeFromNow: number | null = null) {
     if (isLoggedIn(req)) {
       const lastLogin: number = req.session!.lastLogin;
       const now = Date.now();
-      if (now > lastLogin + (timeFromNow ?? CONFIRM_PASSWORD_TIME)) {
+      if (now > lastLogin + (timeFromNow ?? +CONFIRM_PASSWORD_TIME)) {
         return next(
           new UnAuthorizedRequest("You need to provide your password again")
         );
@@ -129,18 +128,3 @@ export function reAuthenticate(timeFromNow: number | null = null) {
   };
 }
 
-export function rateLimitAndLockOutAccount(timeFromNow: number | null = null) {
-  return function (req: Request, res: Response, next: NextFunction) {
-    if (isLoggedIn(req)) {
-      const lastLogin: number = req.session!.lastLogin;
-      const now = Date.now();
-      if (now > lastLogin + (timeFromNow ?? CONFIRM_PASSWORD_TIME)) {
-        return next(
-          new UnAuthorizedRequest("You need to provide your password again")
-        );
-      }
-    }
-
-    next();
-  };
-}

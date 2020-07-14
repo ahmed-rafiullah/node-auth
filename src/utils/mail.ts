@@ -5,7 +5,7 @@ const transporter = nodemailer.createTransport(SMTP_OPTIONS)
 
 export function sendMail(options: SendMailOptions) {
 
-    transporter.sendMail({
+    return transporter.sendMail({
         ...options,
         from: MAIL_FROM
     })

@@ -14,13 +14,15 @@ const IS_PROD = process.env.NODE_ENV === 'production'
 
 export const {
   
-  COOKIE_SECRET = "development",
+  COOKIE_SECRET = "example",
   SESSION_NAME = "sid",
   SESSION_MAX_AGE = THIRTY_MINUTES,
-  SESSION_REMEMBER_ME_MAX_AGE = ONE_WEEK
+  SESSION_REMEMBER_ME_MAX_AGE = ONE_WEEK,
+  PASSWORD_RESET_TIMEOUT = FIVE_MINUTES,
+  CONFIRM_PASSWORD_TIME = ONE_MINUTE
 } = process.env;
 
-export const ABSOLUTE_TIME_OUT: number = +(process.env.ABSOLUTE_TIME_OUT ??  SIX_HOURS)
+
 
 export const SESSION_OPTION: SessionOptions = {
   secret: COOKIE_SECRET,
@@ -37,11 +39,12 @@ export const SESSION_OPTION: SessionOptions = {
   
 };
 
-export const PASSWORD_RESET_TIMEOUT = FIVE_MINUTES
+
+console.log(SESSION_OPTION)
 
 export const PASSWORD_RESET_BYTES = 40
 
-export const CONFIRM_PASSWORD_TIME = ONE_MINUTE
+
 
 
 

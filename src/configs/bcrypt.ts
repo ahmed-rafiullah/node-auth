@@ -5,5 +5,5 @@ const {
 
 
 export  const bcryptOptions = {
-    SALT_ROUNDS
+    SALT_ROUNDS: +SALT_ROUNDS
 } 

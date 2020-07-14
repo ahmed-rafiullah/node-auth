@@ -24,6 +24,7 @@ import { parseUserAgent } from "./middlewares/userAgent";
  import mongoStore from  'connect-mongo'
 
  import mongoose from 'mongoose'
+import { mongoOptions } from "./configs/mongo";
 
  const MongoStoreWithSession = mongoStore(session)
 
@@ -36,23 +37,23 @@ const app = express();
 
 
 
-
-
-
 app.use(helmet())
-// setup sessions using redis
+
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(
   session({
     ...SESSION_OPTION,
     store:  new MongoStoreWithSession({
        mongooseConnection: mongoose.connection,
        stringify: false,
+       
+       
     })
   })
 );
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 
 app.use(logOutIfTooLong)
@@ -70,10 +71,15 @@ app.use(internalServerErrorOrAppErrorHandler);
 createConnection()
   .then(() => {
 
-    return mongoose.connect('mongodb://root:example@localhost:27017/session/?authSource=admin',{ dbName: 'session-cache' ,useNewUrlParser: true, useUnifiedTopology: true})
+
+    
+    return mongoose.connect(mongoOptions.url,mongoOptions.other)
   
   }).then(() => {
     console.log("Connected to database");
+
+   
+
     app.listen(APP_PORT, () => {
       console.log(`Server is running on PORT: ${APP_PORT}`);
     });

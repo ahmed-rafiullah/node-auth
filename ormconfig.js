@@ -1,14 +1,7 @@
 
 
-const {
-    DATABASE_HOST = 'localhost',
-    DATABASE_USER = 'root',
-    DATABASE_PASSWORD = '12345',
-    DATABASE_NAME = 'simple'
 
-} = process.env
-
-
+import {DATABASE_HOST, DATABASE_NAME, DATABASE_PASSWORD , DATABASE_USER, DATABASE_PORT} from './src/configs'
 
 
 
@@ -16,7 +9,7 @@ module.exports =
 {
     type: "mysql",
     host: DATABASE_HOST,
-    port: 4050,
+    port: DATABASE_PORT,
     username: DATABASE_USER,
     password: DATABASE_PASSWORD,
     database: DATABASE_NAME,

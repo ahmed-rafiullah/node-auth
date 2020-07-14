@@ -3,15 +3,18 @@ import { APP_HOSTNAME } from './server'
 
 export const {
     SMTP_HOST = 'smtp.ethereal.email',
-    SMTP_PORT = 587,
-    SMTP_USER = 'alize.herman@ethereal.email',
-    SMTP_PASSWORD = 'pX6FXz6tUrdzNkEmGm'
+    SMTP_PORT = 587 ,
+    SMTP_USER,
+    SMTP_PASSWORD,
+    EMAIL_VERIFICATION_EXPIRY_TIME = '5m'
 
 } = process.env
 
 export const MAIL_FROM =  `noreply@${APP_HOSTNAME}`
 
-export const EMAIL_VERIFICATION_EXPIRY_TIME = '5m'
+console.log(Number(SMTP_PORT))
+
+console.log(SMTP_PORT)
 
 export const SMTP_OPTIONS: Options = {
    
@@ -22,3 +25,6 @@ export const SMTP_OPTIONS: Options = {
         user: SMTP_USER
     }
 }
+
+
+console.log(SMTP_OPTIONS)

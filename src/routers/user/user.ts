@@ -84,13 +84,13 @@ route.post("/register", isAlreadyLoggedIn, async (req, res, next) => {
 
     console.log(user.id);
 
-    sendMail({
-      to: "alize.herman@ethereal.email",
+    await sendMail({
+      to: validEmail!.email,
       subject: "Verify your email address",
       html: verifyMailTemplate(resetURL),
     });
 
-    // logIn(req, result.id)
+    
 
     res.json({
       message:
@@ -235,7 +235,7 @@ route.post("/logout", shouldBeLoggedIn, async (req, res, next) => {
   }
 });
 
-route.post("/email/verify", isAlreadyLoggedIn, async (req, res, next) => {
+route.post("/email/verify", isAlreadyLoggedIn, parseUserAgent(),async (req, res, next) => {
   // do the thing and set activated to now
   try {
     // validate query params
@@ -296,8 +296,8 @@ route.post("/email/resend", async (req, res, next) => {
       console.log("email found and unactive");
       const resetURL = await found!.createResetURL();
 
-      sendMail({
-        to: "alize.herman@ethereal.email",
+      await sendMail({
+        to: validEmail!.email,
         subject: "Verify your email address",
         html: verifyMailTemplate(resetURL),
       });
@@ -338,7 +338,7 @@ route.post("/password/forgot", isAlreadyLoggedIn, async (req, res, next) => {
       passwordReset.user = found;
       // expires 1 hour from now
       const date = new Date();
-      const expiresAt = new Date(date.getSeconds() + PASSWORD_RESET_TIMEOUT);
+      const expiresAt = new Date(date.getTime() + +PASSWORD_RESET_TIMEOUT);
 
       passwordReset.expiresAt = expiresAt;
 
@@ -373,8 +373,8 @@ route.post("/password/forgot", isAlreadyLoggedIn, async (req, res, next) => {
       // DO NOT move this code to be above the transaction block code
       let url = passwordReset.createPasswordResetUrl(token);
 
-      sendMail({
-        to: "alize.herman@ethereal.email",
+     await sendMail({
+        to: validEmail!.email,
         subject: "Password Reset",
         html: passWordResetMailTemplate(url),
       });
@@ -434,8 +434,8 @@ route.post("/password/reset", isAlreadyLoggedIn, async (req, res, next) => {
         .execute();
     });
 
-    sendMail({
-      to: "alize.herman@ethereal.email",
+    await sendMail({
+      to: found.user.email,
       subject: "Password reset status",
       text: "Your password was successfully reset",
     });
