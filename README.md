@@ -16,13 +16,31 @@ For more information on auth processes visit [https://github.com/alex996/present
 - [x] account lockout (`"Too many failed login attempts"`)
 - [x] rate limiting (`"Too many requests"`)
 
+#### Tech
+
+- MySQL as database
+- MongoDB as session storage
+- Both containerized
+- Express as server application
+- And typescript as language of choice
+
+
+
 #### Issues
 If you find any security related or other issues please do start a pull request
 
 #### Requirements
 Install `node.js` and `Docker`
 
+
+#### Email
+
+Setup an ethereal account and get the email and password and replace the values in the .env file.
+
+Visit https://ethereal.email/
+
 #### Steps to run
+
 
 Below is a sample configuration file create a `.env` file in the root of the project and simply copy paste the example below or from the example.env file.
 
