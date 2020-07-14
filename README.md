@@ -164,7 +164,6 @@ After the containers are running run `npm run dev` or `npm run dev`
 
 Provided is a sample postman api for testing
 
-[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/c3cad5b3e6b7262fb768)
-
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/5f611bc35c38a38629f0)
 
 **SIDE NOTE :** for passwords a schemavalidator is set such that `password must contain at least one upper case letter, one lower case letter, one digit, one special character from _ or -, and have min length 8 and any ascii letter`
