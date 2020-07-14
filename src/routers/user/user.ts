@@ -181,8 +181,9 @@ route.post(
           // set headers and throw error
           await limiterConsecutiveFailsByUsernameAndIP.consume(ipEmailKey).catch(err => {
             res.set('Retry-After', String(Math.round(err.msBeforeNext / 1000) || 1));
-            return res.status(429).json({
-              message: 'Too Many Requests'
+            //TODO: optionally send email that account is locked
+            return res.status(401).json({
+              message: 'Account is locked'
             });
           })
 
