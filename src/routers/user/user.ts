@@ -17,6 +17,10 @@ import {
   logOut,
   shouldBeLoggedIn,
   reAuthenticate,
+  limiterConsecutiveFailsByUsernameAndIP,
+  limiterSlowBruteByIP,
+  maxWrongAttemptsByIpPerDay,
+  maxConsecutiveFailsByEmailAndIp,
 } from "../../middlewares";
 import { isAlreadyLoggedIn, parseUserAgent } from "../../middlewares";
 import jsonwebtoken from "jsonwebtoken";
@@ -30,6 +34,7 @@ import {
 import { APP_SECRET, PASSWORD_RESET_TIMEOUT } from "../../configs";
 import { PasswordResets } from "../../entities/PasswordResets";
 import { Sessions } from "../../entities/MongooseSession";
+import { RateLimiterRes } from "rate-limiter-flexible";
 
 const route = Router();
 
@@ -102,44 +107,115 @@ route.post(
   parseUserAgent(),
   async (req, res, next) => {
     try {
-      console.log(req.body);
+     
 
-      const validLogin = await loginSchema.validate(req.body).catch((err) => {
-        throw new BadRequest(err.message);
-      });
+      // get keys
+      const ipEmailKey = `${req.body.email}:${req.ip}}`;
+      const ipKey = `${req.ip}}`;
 
-      // check if user exists or not
-      const foundUser = await getRepository(User).findOne(
-        { email: validLogin!.email },
-        { select: ["id", "password", "email", "activatedAt"] }
-      );
-      console.log(foundUser);
+      // get consumed points
+      const [resUsernameAndIP, resSlowByIP] = await Promise.all([
+        limiterConsecutiveFailsByUsernameAndIP.get(ipEmailKey),
+        limiterSlowBruteByIP.get(ipKey),
+      ]);
 
-      // no email or password not correct
+      // number of secs before client can retry again
+      let retrySecs = 0;
+
+      // check if already blocked and set retry secs
       if (
-        !foundUser ||
-        !(await foundUser.matchesPassword(validLogin!.password))
+        resSlowByIP !== null &&
+        resSlowByIP.consumedPoints > maxWrongAttemptsByIpPerDay
       ) {
-        throw new UnAuthorizedRequest("email or password incorrect");
+        // convert milliseconds to seconds or default to 1 second
+        retrySecs = Math.round(resSlowByIP.msBeforeNext) / 1000 || 1;
+      } else if (
+        resUsernameAndIP !== null &&
+        resUsernameAndIP.consumedPoints > maxConsecutiveFailsByEmailAndIp
+      ) {
+        retrySecs = Math.round(resUsernameAndIP.msBeforeNext) / 1000 || 1;
       }
 
-      if (!foundUser.activatedAt) {
-        throw new UnAuthorizedRequest(
-          "you need to verify your email first or resend if you haven't received it"
+      // it is blocked !!
+      if (retrySecs > 0) {
+        res.set("Retry-After", String(retrySecs));
+        return res.status(429).json({
+          message: "Too Many Requests",
+        });
+      } else {
+        // consume
+
+        const validLogin = await loginSchema.validate(req.body).catch((err) => {
+          throw new BadRequest(err.message);
+        });
+
+        // check if user exists or not
+        const foundUser = await getRepository(User).findOne(
+          { email: validLogin!.email },
+          { select: ["id", "password", "email", "activatedAt"] }
         );
+     
+
+ 
+        // no email or password not correct
+        if (
+          !foundUser 
+        ) {
+          
+          // set headers and throw error
+          await limiterSlowBruteByIP.consume(ipKey).catch(err => {
+            
+            res.set('Retry-After', String(Math.round(err.msBeforeNext / 1000) || 1));
+            return res.status(429).json({
+              message: 'Too Many Requests'
+            });
+          })
+
+          throw new UnAuthorizedRequest("email or password incorrect");
+        }
+
+
+        // user exists but password is incorrect
+        if(!(await foundUser.matchesPassword(validLogin!.password))) {
+
+          // set headers and throw error
+          await limiterConsecutiveFailsByUsernameAndIP.consume(ipEmailKey).catch(err => {
+            res.set('Retry-After', String(Math.round(err.msBeforeNext / 1000) || 1));
+            return res.status(429).json({
+              message: 'Too Many Requests'
+            });
+          })
+
+          throw new UnAuthorizedRequest("email or password incorrect");
+        }
+
+
+       
+
+        if (!foundUser.activatedAt) {
+          throw new UnAuthorizedRequest(
+            "you need to verify your email first or resend the verification email if you haven't received it"
+          );
+        }
+
+        //user login credentials are correct
+
+        logIn(req, foundUser.id, validLogin!.rememberMe);
+
+        // reset limiter for user by email address
+        if (resUsernameAndIP !== null && resUsernameAndIP.consumedPoints > 0) {
+          // Reset on successful authorization
+          await limiterConsecutiveFailsByUsernameAndIP.delete(ipEmailKey);
+        }
+
+        res.json({
+          message: "logged in user",
+          user: {
+            id: foundUser.id,
+            email: foundUser.email,
+          },
+        });
       }
-
-      //user login credentials are correct
-      
-      logIn(req, foundUser.id, validLogin!.rememberMe);
-
-      res.json({
-        message: "logged in user",
-        user: {
-          id: foundUser.id,
-          email: foundUser.email,
-        },
-      });
     } catch (err) {
       next(err);
     }

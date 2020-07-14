@@ -4,4 +4,4 @@ export * from './internalAnd404'
 
 export * from './userAgent'
 
-export * from './ratelimiter'
+export * from './ratelimiters'
