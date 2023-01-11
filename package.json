@@ -43,7 +43,7 @@
     "express-session": "^1.17.1",
     "helmet": "^3.23.3",
     "jsonwebtoken": "^8.5.1",
-    "knex": "^0.21.1",
+    "knex": "^2.4.0",
     "mongoose": "^5.9.23",
     "mysql2": "^2.1.0",
     "nodemailer": "^6.4.10",
